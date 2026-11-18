@@ -1,0 +1,24 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة الإدارة</title><style>body{font-family:system-ui;max-width:900px;margin:auto;padding:16px} input,textarea,select{width:100%;padding:10px;margin:6px 0;border-radius:10px;border:1px solid #ccc} button{padding:12px;background:#7c3aed;color:#fff;border:none;border-radius:10px;width:100%;margin:6px 0} .card{border:1px solid #ddd;border-radius:16px;padding:16px;margin:12px 0}</style></head><body>
+<h1>لوحة إدارة - مهندس أحمد رمضان</h1>
+<div class="card" style="background:#fef2f2"><b>⚠️ تحذير أمني صريح:</b><br>هذه اللوحة تستخدم PIN محلي في المتصفح فقط للتجربة. <b>ليست حماية نهائية.</b> الدخول الآمن الحقيقي يتطلب Supabase Auth (إيميل + كلمة سر مشفرة + RLS). لم يتم ربطه بعد لأن إنشاء مشروع Supabase يتطلب حسابك أنت، ولا أستطيع إنشاءه من هنا. اتبع خطوات README لربطه. لا تنشر هذه اللوحة للعامة قبل ربط Supabase Auth.</div>
+<div id="login"><p>ضع PIN من اختيارك أول مرة، وبعدها ادخل بنفس PIN على نفس المتصفح.</p><input id="pin" type="password" placeholder="PIN"><button onclick="login()">دخول</button></div>
+<div id="panel" style="display:none">
+<h2>إضافة خبر</h2><input id="t" placeholder="عنوان الخبر"><textarea id="b" placeholder="التفاصيل + المصدر + التاريخ"></textarea><select id="s"><option>مؤكد رسميا</option><option>متداول بين السكان</option><option>يحتاج تحقق</option></select><button onclick="addNews()">حفظ خبر (بانتظار الموافقة - لن يظهر للعامة حتى توافق عليه)</button>
+<h2>أخبار بانتظار الموافقة</h2><div id="pending"></div>
+<h2>أخبار معتمدة</h2><div id="approved"></div>
+<h2>شكاوى / مشاركات وصلت (مخفية عن الجمهور)</h2><div id="shares"></div>
+<h2>سجل التعديلات</h2><div id="log"></div>
+<p><a href="index.html">العودة للموقع</a></p></div>
+<script>
+let DB = JSON.parse(localStorage.getItem('elobour_db')||'{"news":[],"shares":[],"log":[]}');
+function save(){localStorage.setItem('elobour_db', JSON.stringify(DB)); render();}
+function login(){var p=document.getElementById('pin').value; if(!p){alert('اكتب PIN'); return;} var saved=localStorage.getItem('elobour_pin'); if(!saved){localStorage.setItem('elobour_pin',p); alert('تم إنشاء PIN على هذا المتصفح فقط. احفظه. هذه حماية تجريبية وليست نهائية.');} else if(saved!==p){alert('PIN غلط'); return;} document.getElementById('login').style.display='none'; document.getElementById('panel').style.display='block'; render();}
+function addNews(){var t=document.getElementById('t').value.trim(), b=document.getElementById('b').value.trim(); if(!t||!b){alert('اكتب العنوان والتفاصيل'); return;} DB.news.push({title:t, body:b, status:document.getElementById('s').value, created:new Date().toLocaleString('ar-EG'), approved:false}); DB.log.push('أضاف خبرا: '+t+' - '+new Date().toLocaleString('ar-EG')); save(); document.getElementById('t').value=''; document.getElementById('b').value='';}
+function approve(i){DB.news[i].approved=true; DB.log.push('وافق على خبر: '+DB.news[i].title+' - '+new Date().toLocaleString('ar-EG')); save();}
+function delNews(i){if(!confirm('متأكد تحذف؟'))return; DB.log.push('حذف خبر: '+DB.news[i].title); DB.news.splice(i,1); save();}
+function render(){document.getElementById('pending').innerHTML=DB.news.map((n,i)=>!n.approved?`<div class="card"><b>${n.title}</b><br>${n.body}<br><small>${n.status} - ${n.created}</small><button onclick="approve(${i})">قبول ونشر</button><button onclick="delNews(${i})" style="background:#dc2626">حذف</button></div>`:'').join('')||'لا يوجد';
+document.getElementById('approved').innerHTML=DB.news.map((n,i)=>n.approved?`<div class="card"><b>${n.title}</b><br>${n.body}<button onclick="delNews(${i})" style="background:#dc2626">حذف</button></div>`:'').join('')||'لا يوجد';
+document.getElementById('shares').innerHTML=DB.shares.map((s,i)=>`<div class="card"><b>${s.type}</b> - ${s.area||''}<br>${s.text}<br><small>${s.created} - ${s.approved?'معتمد':'بانتظار المراجعة - مخفي عن الجمهور'}</small></div>`).join('')||'لا توجد مشاركات على هذا الجهاز';
+document.getElementById('log').innerHTML=DB.log.map(l=>`<div>${l}</div>`).join('')||'لا يوجد سجل';}
+if(localStorage.getItem('elobour_pin')){document.getElementById('login').innerHTML='<p>هذا المتصفح فيه PIN محفوظ. اكتب PIN للدخول (حماية تجريبية).</p><input id="pin" type="password" placeholder="PIN"><button onclick="login()">دخول</button>';}
+</script></body></html>
